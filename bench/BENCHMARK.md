@@ -51,14 +51,29 @@ close the gap**: Sonnet costs roughly 3x Haiku per judgment and scored only
 
 Accuracy at a 0.5 threshold: 88.5% (Jev) vs 86.5% (Sonnet), 85.1% (Haiku).
 
+### Baseline handling, stated explicitly
+
+**Haiku produced 12 unparsable responses out of 200** (it replied "NO" instead
+of a number, ignoring the output contract). Those rows were **dropped** from its
+score. That is the treatment most charitable to the baseline: scoring them as
+uninformative (0.5) instead would move Haiku from 0.906 to **0.898** and widen
+Jev's margin. The reported gap is therefore conservative. Sonnet had zero
+unparsable responses.
+
 ### Why this is plausible rather than surprising
 
-Grounding is a constrained verification task, not an open generation task. The
-frontier model's advantage is breadth and reasoning depth, neither of which is
-the bottleneck when the whole job is "is this span supported by that span". The
-typed model is trained to emit a calibrated probability, so it expresses
-uncertainty; the LLM emits near-binary judgments (it answered 0 or 1 on most
-rows), which throws away the ranking information AUC measures.
+Grounding is a constrained verification task, not open generation. The frontier
+model's advantage is breadth and reasoning depth, neither of which is the
+bottleneck when the whole job is "is this span supported by that span".
+
+The mechanism differs between the two baselines, and an earlier draft of this
+document got it wrong by generalizing from Haiku:
+
+- **Haiku** collapses to the extremes: 70% of its answers were exactly 0.0 or
+  1.0, discarding the ranking information AUC measures.
+- **Sonnet** does spread its probabilities (only 11% at the extremes, 16
+  distinct values) and still loses. So calibration granularity is not the whole
+  story; it is simply less accurate at the underlying judgment.
 
 ## Cost and latency
 

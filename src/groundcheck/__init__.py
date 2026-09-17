@@ -46,12 +46,26 @@ class Verdict(str, Enum):
 #   strict      block at ~95%
 # `review_below` is the next recall step up, so the REVIEW band covers exactly
 # the cases the block threshold is about to let through.
+#
+# NOTE: the summarization row is on the `support`/4 scale, not the noul scale,
+# because that task decides on the score primitive (see `check`). The other two
+# rows are on the noul scale. Changing one without the other silently breaks
+# the task's operating point.
 _SENSITIVITY_TABLE: dict[str, dict[TaskShape, tuple[float, float]]] = {
     # sensitivity: {shape: (block_below, review_below)}
-    "balanced":   {"dialogue": (0.08, 0.135), "qa": (0.472, 0.82), "summarization": (0.607, 0.82)},
-    "strict":     {"dialogue": (0.135, 0.581), "qa": (0.82, 0.92), "summarization": (0.82, 0.89)},
-    "permissive": {"dialogue": (0.05, 0.08), "qa": (0.103, 0.472), "summarization": (0.34, 0.607)},
+    "balanced":   {"dialogue": (0.08, 0.135), "qa": (0.472, 0.82), "summarization": (0.808, 0.93)},
+    "strict":     {"dialogue": (0.135, 0.581), "qa": (0.82, 0.92), "summarization": (0.93, 0.969)},
+    "permissive": {"dialogue": (0.05, 0.08), "qa": (0.103, 0.472), "summarization": (0.666, 0.773)},
 }
+
+
+def _support_to_probability(score: float) -> float:
+    """Map the 0-4 `support` rubric onto a 0-1 grounding probability.
+
+    Linear rescale: the summarization thresholds below are derived from this
+    same transform, so the two must change together.
+    """
+    return max(0.0, min(1.0, score / 4.0))
 
 
 @dataclass(frozen=True)
@@ -196,10 +210,20 @@ class GroundCheck:
         support = float(resp.answers["support"].score)
         conf = float(resp.answers["support"].confidence)
 
+        # On SUMMARIZATION the `score` primitive is a better detector than the
+        # `noul`, so the decision uses it there. Measured on four disjoint
+        # slices of fresh HaluEval data (n=160-180 each), score beat noul every
+        # time: +0.048 AUC on the first fresh slice, CI [+0.025, +0.073].
+        #
+        # This is deliberately NOT applied to qa or dialogue, where the same
+        # test showed score LOSES (qa -0.008, dialogue -0.031, both CIs
+        # excluding zero). A blanket switch would have made two tasks worse.
+        decision_p = _support_to_probability(support) if pol.task == "summarization" else p
+
         block_below, review_below = pol.thresholds()
-        if p < block_below:
+        if decision_p < block_below:
             verdict = Verdict.BLOCK
-        elif p < review_below:
+        elif decision_p < review_below:
             verdict = Verdict.REVIEW
         else:
             verdict = Verdict.PASS

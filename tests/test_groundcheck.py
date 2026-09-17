@@ -73,19 +73,45 @@ def checker(p, conf=0.9):
 
 # --- threshold / verdict contract -------------------------------------------
 
+def _at(shape, value):
+    """Build a checker whose DECISION variable equals `value` for this task.
+
+    summarization decides on support/4; the others decide on the noul. The test
+    must drive whichever one the library actually reads, or it silently tests
+    nothing.
+    """
+    if shape == "summarization":
+        return GroundCheck(client=FakeClient(p=0.5, score=value * 4.0))
+    return GroundCheck(client=FakeClient(p=value))
+
+
 @pytest.mark.parametrize("shape", ["qa", "summarization", "dialogue"])
 def test_verdict_boundaries_match_table(shape):
     block, review = _SENSITIVITY_TABLE["balanced"][shape]
     pol = Policy(task=shape)
 
     # just below the block threshold -> BLOCK
-    assert checker(block - 0.01).check("src", "ans", policy=pol).verdict is Verdict.BLOCK
+    assert _at(shape, block - 0.01).check("src", "ans", policy=pol).verdict is Verdict.BLOCK
     # between the two -> REVIEW
     mid = (block + review) / 2
     if review > block:
-        assert checker(mid).check("src", "ans", policy=pol).verdict is Verdict.REVIEW
+        assert _at(shape, mid).check("src", "ans", policy=pol).verdict is Verdict.REVIEW
     # above review -> PASS
-    assert checker(min(review + 0.05, 1.0)).check("src", "ans", policy=pol).verdict is Verdict.PASS
+    assert _at(shape, min(review + 0.05, 1.0)).check("src", "ans", policy=pol).verdict is Verdict.PASS
+
+
+def test_summarization_decides_on_score_not_noul():
+    """Regression: summarization must read the score primitive.
+
+    Measured on four disjoint fresh slices, `score` beat `noul` every time on
+    summarization (+0.048 AUC, CI [+0.025, +0.073]) while LOSING on qa and
+    dialogue. If someone reverts this to the noul, this test fails.
+    """
+    # noul says 'clearly grounded', score says 'contradicted' -> must BLOCK
+    c = GroundCheck(client=FakeClient(p=0.99, score=0.0))
+    assert c.check("src", "ans", policy=Policy(task="summarization")).verdict is Verdict.BLOCK
+    # the same inputs on qa follow the noul instead -> must PASS
+    assert c.check("src", "ans", policy=Policy(task="qa")).verdict is Verdict.PASS
 
 
 @pytest.mark.parametrize("shape", ["qa", "summarization", "dialogue"])

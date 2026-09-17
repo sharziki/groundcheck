@@ -164,8 +164,49 @@ fetched during derivation):
 | same-file held-out slice | 0.840 | 0.320 |
 | **fresh source rows (n=160)** | **0.775** | **0.375** |
 
-Both degrade on truly unseen data. **Treat 0.78 recall / 0.38 false-block as the
-honest expectation for summarization**, not the 0.84 / 0.32 above.
+Both degrade on truly unseen data.
+
+### Summarization now decides on the `score` primitive, not the `noul`
+
+Investigating that weakness produced a real improvement. Jev returns two signals
+per call, and on **summarization only**, the `score` rubric is the better
+detector. Measured across four disjoint fresh slices:
+
+| slice | noul AUC | score AUC |
+|---|---|---|
+| derivation set | 0.875 | **0.890** |
+| fresh @1000 | 0.838 | **0.858** |
+| fresh @2000 | 0.740 | **0.787** |
+| fresh @3000 | 0.787 | **0.835** |
+| fresh @5000 | 0.794 | **0.805** |
+
+`score` wins in every slice (+0.048, CI [+0.025, +0.073] on the first fresh
+slice). **It is deliberately not applied to qa or dialogue**, where the same
+test showed it *loses* (qa -0.008, dialogue -0.031, both CIs excluding zero).
+A blanket switch would have degraded two tasks to improve one.
+
+Prompt rewording was tried first and did **not** work: a summary-aware phrasing
+that explicitly permits compression moved AUC 0.860 -> 0.872 but made
+false-blocks *worse* (0.324 -> 0.382). The gain came from the primitive, not
+the wording.
+
+### Summarization after the change, on fresh data
+
+| slice | level | recall | false block |
+|---|---|---|---|
+| @1000 | permissive | 0.675 | **0.188** |
+| @1000 | balanced | 0.787 | 0.287 |
+| @4000 | permissive | 0.637 | 0.275 |
+| @4000 | balanced | 0.825 | **0.512** |
+
+**Summarization is still the weak task and this did not fix it.** The false-block
+rate swings from 0.19 to 0.51 across slices at the same setting. Use
+`permissive` for summarization, treat BLOCK as "route to a human", and
+recalibrate on your own documents. The honest headline is
+**0.64-0.83 recall at 0.19-0.51 false blocks**, depending on the corpus.
+
+Also note the benchmark slice was easier than typical data: the 0.875 AUC in the
+headline table is the optimistic end of a 0.74-0.89 range.
 
 **The summarization false-block rate is the main known weakness**: roughly three
 in eight faithful summaries get flagged at the balanced setting. Use

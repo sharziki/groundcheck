@@ -133,10 +133,11 @@ escalated exactly the rows Jev gets wrong scored below Jev alone. Details in
 
 Stated up front rather than discovered in production:
 
-- **Summarization flags ~38% of faithful summaries** at the balanced setting
-  (measured on fresh source rows; a same-file held-out slice suggested 32%, so
-  the optimistic number does not transfer). Use `permissive` for that task, or
-  treat BLOCK as "route to a human".
+- **Summarization is the weak task.** On fresh data its false-block rate swings
+  between **19% and 51%** depending on the corpus, at the same setting. Use
+  `sensitivity="permissive"` there, treat BLOCK as "route to a human", and
+  recalibrate on your own documents. (That task decides on Jev's `score`
+  primitive rather than the `noul`, which measurably helped but did not fix it.)
 - Thresholds are calibrated on HaluEval. They held up across three task shapes and
   on held-out data, but recalibrate on your own examples with
   `bench/derive_thresholds.py` before trusting the exact numbers.

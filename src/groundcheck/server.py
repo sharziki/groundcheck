@@ -41,7 +41,9 @@ class CheckRequest(BaseModel):
     question: str = Field("", description="The user's question, when the task has one")
     task: Literal["qa", "summarization", "dialogue"] = "qa"
     sensitivity: Literal["permissive", "balanced", "strict"] = "balanced"
-    explain: bool = Field(False, description="Also name the least-supported span (extra round trip)")
+    explain: bool = Field(
+        False, description="Also classify the failure mode (extra round trip)"
+    )
 
 
 class BatchRequest(BaseModel):

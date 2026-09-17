@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal
 
-from typesafe_sdk import Noul, Score, TypeSafeClient
+from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
 
 __version__ = "0.1.0"
 
@@ -78,7 +78,8 @@ class Result:
     support: float
     confidence: float
     latency_ms: float
-    unsupported_claim: str | None = None
+    failure_mode: str | None = None
+    failure_confidence: float | None = None
     policy: Policy = field(default_factory=Policy)
 
     @property
@@ -109,7 +110,10 @@ class Result:
             "support": self.support,
             "confidence": round(self.confidence, 4),
             "latency_ms": round(self.latency_ms, 1),
-            "unsupported_claim": self.unsupported_claim,
+            "failure_mode": self.failure_mode,
+            "failure_confidence": (
+                round(self.failure_confidence, 4) if self.failure_confidence is not None else None
+            ),
             "policy": {"sensitivity": self.policy.sensitivity, "task": self.policy.task},
         }
 
@@ -173,8 +177,9 @@ class GroundCheck:
     ) -> Result:
         """Judge whether `answer` is grounded in `source`.
 
-        explain=True asks for the specific unsupported claim. It is a second
-        round trip, so it is off by default and best used on failures only.
+        explain=True additionally classifies HOW the text fails (contradicted /
+        unsupported / overstated). It is a second round trip, so it is off by
+        default and fires only when the verdict is not PASS.
         """
         pol = policy or self._policy
         if not source.strip():
@@ -199,30 +204,44 @@ class GroundCheck:
         else:
             verdict = Verdict.PASS
 
-        claim = None
+        mode, mode_conf = None, None
         if explain and verdict is not Verdict.PASS:
-            claim = self._explain(state)
+            mode, mode_conf = self._diagnose(state)
 
-        return Result(verdict, p, support, conf, latency, claim, pol)
+        return Result(verdict, p, support, conf, latency, mode, mode_conf, pol)
 
-    def _explain(self, state: str) -> str | None:
-        """Name the offending claim. Separate call: only paid for on failures."""
+    def _diagnose(self, state: str) -> tuple[str | None, float | None]:
+        """Classify HOW the text fails its source. Separate call: only on failures.
+
+        An earlier version asked for a quoted span of the offending text. That
+        could never work: Jev's primitives return typed values (a float, a score,
+        a labelled choice), never free text, so the call always yielded None.
+        Classifying the failure mode is both achievable and more actionable,
+        since it maps to different remediations: `contradicted` means retrieval
+        found the wrong passage, `unsupported` means the model padded.
+        """
         try:
             resp = self._client.system_one(
                 state=state,
                 questions={
-                    "claim": Noul(
+                    "failure": Choice(
                         instructions=(
-                            "Quote the single span of the proposed text that is least "
-                            "supported by the source. Reply with that span only."
-                        )
+                            "What is the main problem with the proposed text "
+                            "relative to the source?"
+                        ),
+                        criteria={
+                            "contradicted": "it states something the source contradicts",
+                            "unsupported": "it adds details absent from the source",
+                            "overstated": "it overstates the confidence or scope of the source",
+                            "none": "it is fully supported by the source",
+                        },
                     )
                 },
             )
-            answer = resp.answers["claim"]
-            return getattr(answer, "text", None) or getattr(answer, "reason", None)
+            a = resp.answers["failure"]
+            return str(a.choice), float(a.confidence)
         except Exception:
-            return None
+            return None, None
 
     def check_many(
         self, items: list[dict], *, policy: Policy | None = None, workers: int = 8

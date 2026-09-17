@@ -35,12 +35,22 @@ class FakeAnswer:
         self.confidence = confidence
 
 
+class FakeChoiceAnswer:
+    def __init__(self, choice="contradicted", confidence=1.0):
+        self.choice, self.confidence = choice, confidence
+
+
 class FakeResponse:
     def __init__(self, p, score=4.0, conf=0.9):
         self.answers = {
             "grounded": FakeAnswer(noul=p),
             "support": FakeAnswer(score=score, confidence=conf),
         }
+
+
+class FakeDiagnoseResponse:
+    def __init__(self, choice="contradicted"):
+        self.answers = {"failure": FakeChoiceAnswer(choice)}
 
 
 class FakeClient:
@@ -52,6 +62,8 @@ class FakeClient:
 
     def system_one(self, state, questions):
         self.calls += 1
+        if "failure" in questions:          # the diagnose round trip
+            return FakeDiagnoseResponse()
         return FakeResponse(self.p, self.score, self.conf)
 
 
@@ -142,8 +154,35 @@ def test_as_dict_is_json_serializable():
 def test_explain_skipped_on_pass():
     """The explain round trip must not be paid for when the answer passes."""
     c = FakeClient(p=0.99)
-    GroundCheck(client=c).check("src", "ans", explain=True)
+    r = GroundCheck(client=c).check("src", "ans", explain=True)
     assert c.calls == 1, "explain should not fire a second call on PASS"
+    assert r.failure_mode is None
+
+
+def test_explain_populates_failure_mode_on_block():
+    """Regression: this shipped returning None for every input.
+
+    The original implementation asked a Noul for a quoted span. Noul returns a
+    float, so the field was always None while still costing a second API call.
+    """
+    c = FakeClient(p=0.01)
+    r = GroundCheck(client=c).check("src", "ans", explain=True)
+    assert c.calls == 2, "diagnose must fire on a non-PASS verdict"
+    assert r.failure_mode == "contradicted"
+    assert r.failure_confidence == 1.0
+
+
+def test_diagnose_failure_is_non_fatal():
+    """A failed diagnose call must not take down the primary verdict."""
+    class Exploding(FakeClient):
+        def system_one(self, state, questions):
+            if "failure" in questions:
+                raise RuntimeError("upstream down")
+            return FakeResponse(self.p, self.score, self.conf)
+
+    r = GroundCheck(client=Exploding(p=0.01)).check("src", "ans", explain=True)
+    assert r.verdict is Verdict.BLOCK
+    assert r.failure_mode is None
 
 
 # --- prompt construction ------------------------------------------------------

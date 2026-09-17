@@ -45,8 +45,8 @@ def cmd_check(a: argparse.Namespace) -> int:
     else:
         icon = {Verdict.PASS: "PASS", Verdict.REVIEW: "REVIEW", Verdict.BLOCK: "BLOCK"}[r.verdict]
         print(f"{icon}  grounded={r.p_grounded:.2f}  confidence={r.confidence:.2f}  {r.latency_ms:.0f}ms")
-        if r.unsupported_claim:
-            print(f"  least supported: {r.unsupported_claim}")
+        if r.failure_mode:
+            print(f"  failure mode: {r.failure_mode} (confidence {r.failure_confidence:.2f})")
         if r.should_escalate:
             print("  (uncertain: worth escalating to a larger judge)")
     return EXIT[r.verdict]
@@ -96,7 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--source"); c.add_argument("--source-file")
     c.add_argument("--answer"); c.add_argument("--answer-file")
     c.add_argument("--question", default="")
-    c.add_argument("--explain", action="store_true", help="name the least-supported span")
+    c.add_argument("--explain", action="store_true",
+                   help="also classify the failure mode (extra round trip)")
     c.set_defaults(func=cmd_check)
 
     b = sub.add_parser("batch", parents=[common], help="check a JSONL file (CI gate)")

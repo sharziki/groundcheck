@@ -63,6 +63,17 @@ if result.should_escalate:
     queue_for_human_review(answer, result.p_grounded)   # the uncertain slice
 ```
 
+### Why did it fail?
+
+```python
+r = gc.check(source=ctx, answer=ans, explain=True)
+r.failure_mode   # 'contradicted' | 'unsupported' | 'overstated' | None
+```
+
+The modes map to different fixes: `contradicted` means retrieval returned the
+wrong passage; `unsupported` means the model padded. It is a second round trip
+and fires only when the verdict is not PASS.
+
 `sensitivity` is expressed in the language of your risk tolerance, not in magic
 numbers. Thresholds are **derived from a measured ROC curve**, not hand-tuned:
 

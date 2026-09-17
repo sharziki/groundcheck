@@ -1,0 +1,19 @@
+{
+  "shape": "dialogue",
+  "sensitivity": "balanced",
+  "n": 100,
+  "n_hallucinated": 50,
+  "n_grounded": 50,
+  "block_recall": 0.82,
+  "block_recall_target": 0.85,
+  "flag_recall_block_or_review": 0.88,
+  "false_block_rate": 0.18,
+  "false_flag_rate": 0.42,
+  "escalation_share": 0.35,
+  "latency_ms": {
+    "median": 192,
+    "p95": 437
+  },
+  "throughput_per_s": 43.8,
+  "PASS": true
+}

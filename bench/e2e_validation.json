@@ -1,0 +1,19 @@
+{
+  "shape": "qa",
+  "sensitivity": "balanced",
+  "n": 120,
+  "n_hallucinated": 63,
+  "n_grounded": 57,
+  "block_recall": 0.8571,
+  "block_recall_target": 0.85,
+  "flag_recall_block_or_review": 0.9365,
+  "false_block_rate": 0.1228,
+  "false_flag_rate": 0.3333,
+  "escalation_share": 0.3333,
+  "latency_ms": {
+    "median": 179,
+    "p95": 375
+  },
+  "throughput_per_s": 43.6,
+  "PASS": true
+}

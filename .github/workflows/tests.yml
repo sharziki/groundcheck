@@ -1,0 +1,58 @@
+name: tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev,server]'
+
+      # The offline suite must pass with NO api key and NO spend. If these ever
+      # need a key, the fake-client seam has been broken and the project is no
+      # longer testable in CI.
+      - name: Test (offline, no API key)
+        run: python -m pytest -v
+
+      - name: Import check
+        run: |
+          python -c "from groundcheck_jev import GroundCheck, Policy, Verdict; print('ok')"
+          python -c "import groundcheck_jev.server, groundcheck_jev.cli; print('ok')"
+
+      # The distribution name differs from the module name because an unrelated
+      # 'groundcheck' package owns both on PyPI. Guard that this stays correct.
+      - name: Build and verify wheel contents
+        run: |
+          pip install build
+          python -m build --wheel
+          python - <<'PY'
+          import glob, zipfile
+          w = glob.glob('dist/*.whl')[0]
+          assert 'groundcheck_jev' in w, f'unexpected wheel name: {w}'
+          tops = {n.split('/')[0] for n in zipfile.ZipFile(w).namelist()}
+          assert tops == {'groundcheck_jev', 'groundcheck_jev-0.1.0.dist-info'}, tops
+          print('wheel ok:', w)
+          PY
+
+      - name: CLI smoke (no key required for --help/--version)
+        run: |
+          groundcheck --version
+          groundcheck check --help

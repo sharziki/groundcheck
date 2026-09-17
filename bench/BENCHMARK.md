@@ -35,20 +35,21 @@ they are fluent, plausible, and wrong, not random text.
 1,600 calls, **zero errors, zero malformed responses**. Typed output means there
 is no parser to fail.
 
-## Head-to-head against a frontier judge
+## Head-to-head against frontier judges
 
 Same examples, paired bootstrap on the AUC difference (10,000 draws).
 
-| Task | Jev AUC | Claude Haiku AUC | Difference | 95% CI | P(Jev better) |
-|---|---|---|---|---|---|
-| qa (n=188) | 0.955 | 0.906 | **+0.050** | [+0.018, +0.085] | 99.9% |
-| summarization (n=148) | 0.878 | 0.825 | **+0.053** | [+0.013, +0.096] | 99.4% |
+| Task | Baseline | Jev AUC | Baseline AUC | Difference | 95% CI | P(Jev better) |
+|---|---|---|---|---|---|---|
+| qa (n=188) | Claude Haiku | 0.955 | 0.906 | **+0.050** | [+0.018, +0.085] | 99.9% |
+| qa (n=200) | **Claude Sonnet** | 0.955 | 0.915 | **+0.040** | [+0.007, +0.077] | 99.3% |
+| summarization (n=148) | Claude Haiku | 0.878 | 0.825 | **+0.053** | [+0.013, +0.096] | 99.4% |
 
-Both confidence intervals exclude zero. The small, cheap, typed model is not
-merely competitive with the frontier LLM on this task, it is **better**, on two
-independent task shapes.
+All three confidence intervals exclude zero. **Moving up the model ladder did not
+close the gap**: Sonnet costs roughly 3x Haiku per judgment and scored only
++0.009 AUC above it, still well below Jev.
 
-Accuracy at a 0.5 threshold: 88.8% vs 85.1% (qa), 81.8% vs 76.4% (summarization).
+Accuracy at a 0.5 threshold: 88.5% (Jev) vs 86.5% (Sonnet), 85.1% (Haiku).
 
 ### Why this is plausible rather than surprising
 
@@ -90,19 +91,30 @@ When Jev is confident it is nearly perfect, and it knows when it is not. That is
 what makes `Result.should_escalate` meaningful rather than decorative: route the
 uncertain quarter of traffic to a bigger model and decide the rest locally.
 
-The measured cascade frontier (escalating the least-confident fraction to Claude):
+The measured cascade frontier (escalating the least-confident fraction):
 
 | Policy | AUC | $/1M | Mean latency |
 |---|---|---|---|
-| Jev only | 0.955 | $23 | 236 ms |
-| escalate 10% | 0.946 | $83 | 1,285 ms |
-| escalate 100% (all Claude) | 0.906 | $588 | 10,100 ms |
+| **Jev only** | **0.955** | **$23** | **236 ms** |
+| escalate 10% to Sonnet | 0.949 | $192 | 935 ms |
+| escalate 30% to Sonnet | 0.937 | $531 | 2,334 ms |
+| escalate 100% (all Sonnet) | 0.915 | $1,718 | 7,230 ms |
+| *oracle: escalate exactly Jev's errors* | *0.939* | - | - |
 
-Note what this table actually says: **escalation made things worse on this
-dataset**, because the escalation target is the weaker judge here. The cascade
-machinery is sound and the confidence signal is real, but on this task the right
-policy is "do not escalate". Reported rather than buried, because it contradicts
-the architecture I expected to recommend.
+**Escalation makes things worse, and the oracle row proves it is not the
+signal's fault.** Even a *perfect* router that escalated exactly the 11.5% of
+rows Jev gets wrong would score 0.939, still below Jev alone at 0.955. When the
+escalation target is worse than the source model, no routing policy can help.
+
+This was tested against both Haiku and Sonnet, because the obvious objection to
+the first negative result was "you escalated to a weak model". Sonnet is
+3x the price and still loses. The conclusion holds:
+
+> **On this task, do not build a cascade. Use Jev alone.**
+
+The confidence signal itself is real and remains useful for *human* review
+queues, where the goal is prioritizing which outputs a person looks at rather
+than routing to another model.
 
 ## End-to-end validation of the shipped library
 

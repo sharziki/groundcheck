@@ -60,7 +60,7 @@ result = gc.check(source=retrieved_context, answer=llm_answer, question=user_que
 if result.verdict is Verdict.BLOCK:
     return "I could not verify that from my sources."
 if result.should_escalate:
-    answer = expensive_model_recheck(...)   # only the uncertain slice
+    queue_for_human_review(answer, result.p_grounded)   # the uncertain slice
 ```
 
 `sensitivity` is expressed in the language of your risk tolerance, not in magic
@@ -102,7 +102,7 @@ curl -X POST localhost:8099/v1/check -H 'content-type: application/json' -d '{
 `POST /v1/check/batch` takes up to 500 items and fans out concurrently
 (~50 checks/sec measured).
 
-## Confidence is a real signal
+## Confidence is a real signal (but do not build a cascade on it)
 
 Jev reports how sure it is, and that number is honest:
 
@@ -111,8 +111,12 @@ Jev reports how sure it is, and that number is honest:
 | >= 0.8 | 51% | **0.982** |
 | < 0.5 | 23% | 0.847 |
 
-`result.should_escalate` uses this to tell you which small slice of traffic is
-worth sending to a bigger, slower model.
+`result.should_escalate` surfaces the uncertain slice. **Use it to prioritize a
+human review queue, not to route to a bigger model.** I tested that cascade
+against both Claude Haiku and Claude Sonnet and it made accuracy *worse* both
+times, because both are weaker judges on this task. Even an oracle router that
+escalated exactly the rows Jev gets wrong scored below Jev alone. Details in
+[bench/BENCHMARK.md](bench/BENCHMARK.md).
 
 ## Known limitations
 

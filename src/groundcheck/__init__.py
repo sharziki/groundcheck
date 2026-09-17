@@ -87,11 +87,18 @@ class Result:
 
     @property
     def should_escalate(self) -> bool:
-        """True when a bigger, slower judge is worth paying for.
+        """True when this result is worth a second look by a HUMAN.
 
-        Measured: Jev's low-confidence stratum scores AUC 0.847 while its
-        high-confidence stratum scores 0.982. Escalating only the uncertain
-        ~10% recovers most of the headroom at ~15% of the all-big-model cost.
+        Read the benchmark before wiring this to another model. Measured: Jev's
+        low-confidence stratum scores AUC 0.847 while its high-confidence
+        stratum scores 0.982, so the signal is real. But escalating those rows
+        to Claude (Haiku *or* Sonnet) made accuracy WORSE, because both are
+        weaker judges on this task. An oracle router that escalated exactly the
+        rows Jev gets wrong still scored below Jev alone.
+
+        So: use this to prioritize a human review queue, not to route to a
+        bigger model, unless you have measured that your escalation target
+        actually beats Jev on your data.
         """
         return self.verdict is Verdict.REVIEW or self.confidence < 0.5
 

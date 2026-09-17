@@ -1,5 +1,7 @@
 # GroundCheck
 
+[![tests](https://github.com/sharziki/groundcheck/actions/workflows/tests.yml/badge.svg)](https://github.com/sharziki/groundcheck/actions/workflows/tests.yml)
+
 **Catch RAG hallucinations in ~200ms for ~$23 per million checks.**
 
 Your retrieval pipeline returns a passage. Your model writes an answer. GroundCheck

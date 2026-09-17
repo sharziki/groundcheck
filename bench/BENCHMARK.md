@@ -232,14 +232,33 @@ HaluEval transferred to a completely different corpus. That is the strongest
 generalization evidence in this document, and it is the opposite of the
 summarization story, where numbers moved a lot between slices.
 
-Two caveats, both material:
+### Adversarial negatives on the same corpus
 
-1. **The fabrications are mechanical** (a number or polarity swapped in an
-   otherwise-verbatim sentence), not human-written like HaluEval's. Mechanical
-   negatives are probably easier, so read this as "the threshold transfers to
-   this corpus", not as a headline accuracy number.
-2. **n=35 is small.** It rules out gross threshold failure; it does not pin the
-   rate to two decimals.
+The run above used mechanical corruptions, which are easy. HaluEval's own
+negatives are LLM-generated, so the same recipe was applied here: **Claude
+rewrites a true claim into a fluent falsehood, and Jev judges it** - independent
+generator and judge.
+
+| | result |
+|---|---|
+| block recall | **1.000** |
+| false-block rate | **0.026** |
+| median latency | 187 ms |
+| n | 39 pairs across 17 pages |
+
+The negatives are genuinely subtle, spot-checked to confirm the perfect score is
+not an artifact of broken generation:
+
+| true | adversarial rewrite |
+|---|---|
+| "...tested on 13,036 settled KXETH15M markets" | "...on **14,192** settled markets" |
+| "Payout is $1 only when the bought side **matches** the official final result" | "...only when the bought side **contradicts**..." |
+| "OAuth credentials... **are not stored in Nova**" | "OAuth credentials... **are synced to Nova for persistent storage**" |
+
+No grammatical tells, and each requires understanding the document to reject.
+
+**Remaining caveat: n=39.** That rules out gross threshold failure and gives a
+credible point estimate; it does not pin the rate to two decimals.
 
 Building this found two bugs in the *evaluation*, both of which had made the
 detector look worse than it was: metadata headers were being scored as claims,

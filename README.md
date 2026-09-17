@@ -41,9 +41,16 @@ optimistic end. The other two tasks were measured once and should be read with
 the same caution.
 
 Run against a real private knowledge base (~8,900 pages of meeting notes,
-emails, and research logs) with **no threshold retuning**: 94% of fabrications
-caught, **zero** faithful claims wrongly blocked. Details and caveats in the
-benchmark.
+emails, and research logs) with **no threshold retuning**:
+
+| negatives | caught | falsely blocked |
+|---|---|---|
+| mechanical corruptions | 94.3% | 0.0% |
+| **LLM-written adversarial rewrites** | **100%** | 2.6% |
+
+The adversarial set is the meaningful one: a separate model rewrote true claims
+into fluent falsehoods (`13,036 markets` → `14,192`, `are not stored in Nova` →
+`are synced to Nova`). Details and caveats in the benchmark.
 
 Against Claude Haiku on the same examples, GroundCheck is **more accurate**
 (+0.050 AUC, 95% CI [+0.018, +0.085]), about 20x faster, and about 25x cheaper.

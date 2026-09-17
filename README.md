@@ -33,7 +33,12 @@ Measured on 1,600 labeled examples with human-written hard negatives:
 |---|---|---|---|
 | Question answering | **0.952** | 221 ms | $22.82 |
 | Dialogue | **0.912** | 169 ms | $23.26 |
-| Summarization | **0.875** | 172 ms | $49.87 |
+| Summarization | 0.875 benchmark, **0.74-0.89 on fresh data** | 172 ms | $49.87 |
+
+The summarization row is deliberately shown as a range: re-measuring on four
+fresh slices put it between 0.74 and 0.89, so the single benchmark number is the
+optimistic end. The other two tasks were measured once and should be read with
+the same caution.
 
 Against Claude Haiku on the same examples, GroundCheck is **more accurate**
 (+0.050 AUC, 95% CI [+0.018, +0.085]), about 20x faster, and about 25x cheaper.
@@ -41,11 +46,17 @@ Full methodology, baselines, and limitations: [bench/BENCHMARK.md](bench/BENCHMA
 
 ## Install
 
+**Not on PyPI yet.** Install from source:
+
 ```bash
-pip install groundcheck                # library
-pip install 'groundcheck[server]'      # + HTTP service
+git clone https://github.com/sharziki/groundcheck && cd groundcheck
+pip install -e '.[server]'             # omit [server] for just the library
 export TYPESAFE_API_KEY='...'          # https://typesafe.ai
 ```
+
+> Note: an unrelated package named `groundcheck` already exists on PyPI. This
+> project is not it, and `pip install groundcheck` will get you someone else's
+> library. A distinct distribution name will be chosen before any release.
 
 ## Use it
 

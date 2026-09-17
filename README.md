@@ -121,8 +121,11 @@ curl -X POST localhost:8099/v1/check -H 'content-type: application/json' -d '{
 {"verdict": "block", "p_grounded": 0.02, "confidence": 0.95, "latency_ms": 242}
 ```
 
-`POST /v1/check/batch` takes up to 500 items and fans out concurrently
-(~50 checks/sec measured).
+`POST /v1/check/batch` takes up to 500 items and fans out concurrently.
+Measured throughput on a warm process: **49/s at 12 workers** (18/s at 4, 38/s
+at 8; 16 workers is slower than 12). A **cold process is ~20% slower on its
+first batch** while TLS and connections are established, so keep the service
+warm rather than spawning it per request.
 
 ## Confidence is a real signal (but do not build a cascade on it)
 

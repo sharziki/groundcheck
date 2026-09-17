@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from groundcheck import (  # noqa: E402
+from groundcheck_jev import (  # noqa: E402
     GroundCheck, Policy, Result, Verdict, _SENSITIVITY_TABLE, _build_state,
 )
 

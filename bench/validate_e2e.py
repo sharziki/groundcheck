@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from groundcheck import GroundCheck, Policy, Verdict  # noqa: E402
+from groundcheck_jev import GroundCheck, Policy, Verdict  # noqa: E402
 
 SHAPES = {
     "qa": "halueval.jsonl",

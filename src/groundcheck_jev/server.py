@@ -4,7 +4,7 @@ Exists because the buyer is usually not a Python app. One POST, one JSON verdict
 p50 under 250ms, so it can sit in the request path of a RAG pipeline rather than
 in a nightly eval job.
 
-    uvicorn groundcheck.server:app --port 8099
+    uvicorn groundcheck_jev.server:app --port 8099
 """
 
 from __future__ import annotations

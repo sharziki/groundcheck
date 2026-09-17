@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "groundcheck"
+name = "groundcheck-jev"
 version = "0.1.0"
 description = "Calibrated grounding guardrail for RAG answers. Catches hallucinations in ~200ms for ~$23 per million checks."
 readme = "README.md"
@@ -32,7 +32,7 @@ dev = ["pytest>=8", "numpy>=1.24", "scikit-learn>=1.3", "httpx>=0.27"]
 Homepage = "https://github.com/sharziki/groundcheck"
 
 [project.scripts]
-groundcheck = "groundcheck.cli:main"
+groundcheck = "groundcheck_jev.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -7,7 +7,7 @@ tells you whether the answer is actually supported by the passage, fast enough a
 cheap enough to run on **every** response instead of a 1% sample.
 
 ```python
-from groundcheck import GroundCheck
+from groundcheck_jev import GroundCheck
 
 gc = GroundCheck()
 result = gc.check(
@@ -54,16 +54,21 @@ pip install -e '.[server]'             # omit [server] for just the library
 export TYPESAFE_API_KEY='...'          # https://typesafe.ai
 ```
 
-> Note: an unrelated package named `groundcheck` already exists on PyPI. This
-> project is not it, and `pip install groundcheck` will get you someone else's
-> library. A distinct distribution name will be chosen before any release.
+```python
+from groundcheck_jev import GroundCheck
+```
+
+> **On the name:** an unrelated package already occupies `groundcheck` on PyPI
+> *and* the `groundcheck` import name, so the two could never coexist in one
+> environment. This project is `groundcheck-jev`, importing as
+> `groundcheck_jev`. The `groundcheck` console command is unaffected.
 
 ## Use it
 
 ### As a gate in your RAG pipeline
 
 ```python
-from groundcheck import GroundCheck, Policy, Verdict
+from groundcheck_jev import GroundCheck, Policy, Verdict
 
 gc = GroundCheck(policy=Policy(sensitivity="strict", task="qa"))
 result = gc.check(source=retrieved_context, answer=llm_answer, question=user_question)
@@ -106,7 +111,7 @@ echo $?   # 2 if anything was fabricated
 ### As a service
 
 ```bash
-uvicorn groundcheck.server:app --port 8099
+uvicorn groundcheck_jev.server:app --port 8099
 ```
 
 ```bash

@@ -50,7 +50,12 @@ emails, and research logs) with **no threshold retuning**:
 
 The adversarial set is the meaningful one: a separate model rewrote true claims
 into fluent falsehoods (`13,036 markets` → `14,192`, `are not stored in Nova` →
-`are synced to Nova`). Details and caveats in the benchmark.
+`are synced to Nova`). Replicated with a second generator, and hand-written
+negatives were added for the claims generators refused to corrupt (5/5 caught).
+
+Read it as **"no misses observed across ~70 adversarial pairs"** rather than a
+literal 100% rate: n is small and generator refusals filter the sample. Both
+caveats are quantified in the benchmark.
 
 Against Claude Haiku on the same examples, GroundCheck is **more accurate**
 (+0.050 AUC, 95% CI [+0.018, +0.085]), about 20x faster, and about 25x cheaper.

@@ -257,8 +257,40 @@ not an artifact of broken generation:
 
 No grammatical tells, and each requires understanding the document to reject.
 
-**Remaining caveat: n=39.** That rules out gross threshold failure and gives a
-credible point estimate; it does not pin the rate to two decimals.
+**Replication:** re-run with a different seed and a stronger generator
+(Sonnet instead of Haiku) gave block recall **1.000** and false-block **0.000**
+on 27 pairs. Same conclusion, independently generated negatives.
+
+### Two caveats on this number, both material
+
+**1. The scored set is filtered, and the filter is not neutral.** Generators
+sometimes *refuse* the task, reading "rewrite this true claim as false" as a
+request to write misinformation. Those replies are prose about the refusal, not
+rewrites, so they are dropped. The drop rate is wildly unstable across runs on
+the *same pages*: 2% on one run, **87%** on another. Refusal is claim-dependent
+(an identical request repeated five times refused 0/5), so the claims that get
+scored are the ones a generator was willing to corrupt. **That is a selection
+effect on the negatives, and it inflates confidence in any single run.** The
+harness now reports `generation_drop_rate` so it is visible rather than silent.
+
+**2. n is small** (39 and 27). Enough to rule out gross threshold failure, not
+enough to pin a rate to two decimals.
+
+To attack caveat 1 directly, negatives were **hand-written** for the exact
+claims a generator refused, plus deliberately hard cases:
+
+| true claim | hand-written negative | result |
+|---|---|---|
+| "Default capacity is one contract and one trade per event" | "fifty contracts and unlimited trades" | caught |
+| "Fill uses the first completed candle strictly after arrival" | "uses the same candle that generated the signal" | caught |
+| "The captured quadratic taker fee... are charged" | "Fees are waived for research replays" | caught |
+| "Prop-account headline notional is **not** usable risk capital" | "is fully usable as risk capital" | caught |
+| "Historical profit is **not** an authorization to trade" | "constitutes authorization to begin live trading" | caught |
+
+**5/5 caught, and all five true counterparts passed** (p >= 0.98). So the
+perfect recall is not purely an artifact of the generator's filtering, but treat
+the headline as "no misses observed across ~70 adversarial pairs" rather than a
+literal 100% rate.
 
 Building this found two bugs in the *evaluation*, both of which had made the
 detector look worse than it was: metadata headers were being scored as claims,

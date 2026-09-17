@@ -40,6 +40,11 @@ fresh slices put it between 0.74 and 0.89, so the single benchmark number is the
 optimistic end. The other two tasks were measured once and should be read with
 the same caution.
 
+Run against a real private knowledge base (~8,900 pages of meeting notes,
+emails, and research logs) with **no threshold retuning**: 94% of fabrications
+caught, **zero** faithful claims wrongly blocked. Details and caveats in the
+benchmark.
+
 Against Claude Haiku on the same examples, GroundCheck is **more accurate**
 (+0.050 AUC, 95% CI [+0.018, +0.085]), about 20x faster, and about 25x cheaper.
 Full methodology, baselines, and limitations: [bench/BENCHMARK.md](bench/BENCHMARK.md).

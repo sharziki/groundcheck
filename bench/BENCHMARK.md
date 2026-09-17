@@ -212,6 +212,40 @@ headline table is the optimistic end of a 0.74-0.89 range.
 in eight faithful summaries get flagged at the balanced setting. Use
 `permissive` there, or treat BLOCK as "route to review" rather than "discard".
 
+## Out-of-domain check: a real private corpus
+
+Every number above comes from HaluEval, whose passages are clean encyclopedic
+prose. To test whether the thresholds survive contact with real working data,
+the shipped library was run against a private Nova knowledge base of ~8,900
+pages: meeting transcripts, emails, research logs, daily briefs, inconsistent
+formatting, heavy jargon.
+
+| | result |
+|---|---|
+| block recall | **0.943** |
+| false-block rate | **0.000** |
+| median latency | 191 ms |
+| n | 35 pairs across 16 pages |
+
+**Thresholds were not retuned.** The same `balanced` setting derived from
+HaluEval transferred to a completely different corpus. That is the strongest
+generalization evidence in this document, and it is the opposite of the
+summarization story, where numbers moved a lot between slices.
+
+Two caveats, both material:
+
+1. **The fabrications are mechanical** (a number or polarity swapped in an
+   otherwise-verbatim sentence), not human-written like HaluEval's. Mechanical
+   negatives are probably easier, so read this as "the threshold transfers to
+   this corpus", not as a headline accuracy number.
+2. **n=35 is small.** It rules out gross threshold failure; it does not pin the
+   rate to two decimals.
+
+Building this found two bugs in the *evaluation*, both of which had made the
+detector look worse than it was: metadata headers were being scored as claims,
+and claims were sampled from full pages while the context was truncated. Worth
+noting because both are easy to reproduce in anyone's own eval harness.
+
 ## Limitations
 
 1. **One benchmark family.** All three task shapes come from HaluEval. Its

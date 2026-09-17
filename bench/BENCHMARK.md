@@ -49,6 +49,18 @@ All three confidence intervals exclude zero. **Moving up the model ladder did no
 close the gap**: Sonnet costs roughly 3x Haiku per judgment and scored only
 +0.009 AUC above it, still well below Jev.
 
+**Not all three are equally strong, and the Sonnet result is the thinnest.** Its
+CI lower bound is +0.006, close enough to zero to deserve stress-testing, so it
+got some:
+
+- re-run across **20 different bootstrap seeds**: the lower bound stayed in
+  [+0.004, +0.008] and excluded zero in **20/20**
+- an assumption-free **paired permutation test**: p = 0.022
+- at a 0.5 threshold Jev is correct on 177/200 vs Sonnet's 173/200
+
+So it holds, but treat it as "Jev is at least as good as Sonnet, probably
+better" rather than the decisive margin the Haiku comparisons show.
+
 Accuracy at a 0.5 threshold: 88.5% (Jev) vs 86.5% (Sonnet), 85.1% (Haiku).
 
 ### Baseline handling, stated explicitly
@@ -142,9 +154,21 @@ through the real `GroundCheck.check()` code path, thresholds and all:
 | summarization (n=100) | 85% | **84.0%** | 32.0% | 231 ms |
 | dialogue (n=100) | 85% | **82.0%** | 18.0% | 192 ms |
 
-The library delivers the recall it promises. **The summarization false-block rate
-of 32% is high** and is the main known weakness: on document summarization, one
-in three faithful summaries gets flagged at the balanced setting. Use
+The library delivers the recall it promises **on slices of the same fetched
+file the thresholds were derived from**. That is a weaker claim than it looks,
+so it was re-run on genuinely fresh source rows (HaluEval offset 1000+, never
+fetched during derivation):
+
+| summarization | block recall | false block |
+|---|---|---|
+| same-file held-out slice | 0.840 | 0.320 |
+| **fresh source rows (n=160)** | **0.775** | **0.375** |
+
+Both degrade on truly unseen data. **Treat 0.78 recall / 0.38 false-block as the
+honest expectation for summarization**, not the 0.84 / 0.32 above.
+
+**The summarization false-block rate is the main known weakness**: roughly three
+in eight faithful summaries get flagged at the balanced setting. Use
 `permissive` there, or treat BLOCK as "route to review" rather than "discard".
 
 ## Limitations
